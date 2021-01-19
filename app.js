@@ -49,9 +49,9 @@ const addWebhooksToNewProjects = async ({ action, resource }) => {
   if (action !== "added" || resource.resource_type !== "project") return;
   try {
     await addOrUpdateWebHook(resource.gid);
-    console.log(`New project ${resource.name} (${resource.gid}) added`);
+    console.log(`New project (${resource.gid}) added`);
   } catch (e) {
-    console.warn("Error listening the new project " + resource.name);
+    console.warn("Error listening the new project " + resource.gid);
   }
 };
 
