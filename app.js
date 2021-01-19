@@ -7,6 +7,7 @@ dotenv.config();
 const accessToken = process.env.ACCESS_TOKEN;
 const workspace = process.env.WORKPLACE;
 const teamId = process.env.TEAM;
+const backlogId = process.env.BACKLOG;
 
 const webhookUrl = process.env.WEBHOOK_URL;
 
@@ -15,7 +16,7 @@ const client = asana.Client.create().useAccessToken(accessToken);
 
 // Customs Asana functions
 const findOrCreateTag = async (name) => {
-  const { data } = await client.tags.findByWorkspace(workspace);
+  const { data } = await client.tags.findAll(workspace);
   const currentTag = data.find((tag) => tag.name === name);
   if (currentTag) return currentTag;
   const newTag = await client.tags.createInWorkspace(workspace, {
@@ -33,6 +34,9 @@ const addProyectTagToTasks = async ({ action, resource, parent }) => {
     return;
   try {
     const task = await client.tasks.findById(resource.gid);
+    const hasTheTag = task.tags.find(tag => tag === task.projects[0].name)
+    if(hasTheTag) return
+
     const tag = await findOrCreateTag(task.projects[0].name);
     client.tasks.addTag(task.gid, { tag: tag.gid });
     console.log(`Tag ${tag.name} (${tag.gid}) added to ${task.name}`);
@@ -50,6 +54,17 @@ const addWebhooksToNewProjects = async ({ action, resource }) => {
     console.warn("Error listening the new project " + resource.name);
   }
 };
+
+const addNewTasksToBacklog = async ({ action, resource, parent }) => {
+  if (
+    action !== "added" ||
+    resource.resource_type !== "task" ||
+    parent.resource_type !== "project"
+  )
+    return;
+  await client.sections.addTask(backlogId, { task: resource.gid });
+};
+
 const addOrUpdateWebHook = async (gid, actualHook, options) => {
   if (actualHook) await client.webhooks.deleteById(actualHook.gid);
   await client.webhooks.create(gid, webhookUrl, options);
@@ -107,6 +122,7 @@ app.post("/", function (req, res) {
       // List of actions
       await addProyectTagToTasks(event);
       await addWebhooksToNewProjects(event);
+      await addNewTasksToBacklog(event)
     }, []);
   }
 });
