@@ -35,7 +35,7 @@ const addProyectTagToTasks = async ({ action, resource, parent }) => {
   try {
     const task = await client.tasks.findById(resource.gid);
     const hasTheTag = task.tags.find(tag => tag === task.projects[0].name)
-    if(hasTheTag) return
+    if(hasTheTag || task.projects[0].name === 'Current Run') return
 
     const tag = await findOrCreateTag(task.projects[0].name);
     client.tasks.addTag(task.gid, { tag: tag.gid });
