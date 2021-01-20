@@ -15,12 +15,13 @@ const webhookUrl = process.env.WEBHOOK_URL;
 const client = asana.Client.create().useAccessToken(accessToken);
 
 // Customs Asana functions
-const findOrCreateTag = async (name) => {
+const findOrCreateTag = async (name, color) => {
   const { data } = await client.tags.findAll(workspace);
   const currentTag = data.find((tag) => tag.name === name);
   if (currentTag) return currentTag;
   const newTag = await client.tags.createInWorkspace(workspace, {
     name: name,
+    color: color
   });
   return newTag;
 };
@@ -37,7 +38,10 @@ const addProyectTagToTasks = async ({ action, resource, parent }) => {
     const hasTheTag = task.tags.find(tag => tag === task.projects[0].name)
     if(hasTheTag || task.projects[0].name === 'Current Run') return
 
-    const tag = await findOrCreateTag(task.projects[0].name);
+    const project = await client.projects.findById(task.projects[0].name)
+    console.log(`Project ${project.name} get a new task`)
+
+    const tag = await findOrCreateTag(task.projects[0].name, project.color);
     client.tasks.addTag(task.gid, { tag: tag.gid });
     console.log(`Tag ${tag.name} (${tag.gid}) added to ${task.name}`);
   } catch (e) {
