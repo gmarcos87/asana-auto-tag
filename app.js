@@ -41,11 +41,11 @@ const addProyectTagToTasks = async ({ action, resource, parent }) => {
     const project = await client.projects.findById(task.projects[0].name)
     console.log(`Project ${project.name} get a new task`)
 
-    const tag = await findOrCreateTag(task.projects[0].name, project.color);
+    const tag = await findOrCreateTag(project.name, project.color);
     client.tasks.addTag(task.gid, { tag: tag.gid });
     console.log(`Tag ${tag.name} (${tag.gid}) added to ${task.name}`);
   } catch (e) {
-    console.warn("Error adding the tag to " + resource.gid);
+    console.warn("Error adding the tag to " + resource.gid, e.value.errors);
   }
 };
 
