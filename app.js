@@ -63,9 +63,12 @@ const addNewTasksToBacklog = async ({ action, resource, parent }) => {
   if (
     action !== "added" ||
     resource.resource_type !== "task" ||
-    parent.resource_type !== "project"
+    parent.resource_type !== "section"
   )
     return;
+  const currentSection = await client.sections.findById(parent.gid);
+  if (currentSection.name.toLowerCase() !== 'top priority') return
+
   await client.sections.addTask(backlogId, { task: resource.gid });
 };
 
