@@ -72,8 +72,8 @@ const addNewTasksToBacklog = async ({ action, resource, parent }) => {
   if (currentSection.name.toLowerCase() !== 'top priority') return
 
   // But not this Top Priority sections
-  const toIgnore = [1156081171852558]
-  if (toIgnore.indexOf(parent.gid) > -1) return
+  const toIgnore = ['1156081171852558']
+  if (toIgnore.indexOf(currentSection.gid) !== -1) return
 
   await client.sections.addTask(backlogId, { task: resource.gid });
 };
