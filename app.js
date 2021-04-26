@@ -8,22 +8,24 @@ const accessToken = process.env.ACCESS_TOKEN;
 const workspace = process.env.WORKPLACE;
 const teamId = process.env.TEAM;
 const backlogId = process.env.BACKLOG;
-
+const projectCustomFieldId = process.env.PROJECT_CUSTOM_FILED;
 const webhookUrl = process.env.WEBHOOK_URL;
 
 // Set up a Asana client using personal access token
 const client = asana.Client.create().useAccessToken(accessToken);
 
 // Customs Asana functions
-const findOrCreateTag = async (name, color) => {
-  const { data } = await client.tags.findAll(workspace);
-  const currentTag = data.find((tag) => tag.name === name);
-  if (currentTag) return currentTag;
-  const newTag = await client.tags.createInWorkspace(workspace, {
-    name: name,
-    color: color
-  });
-  return newTag;
+const findOrCreateProjectCustomField = async (name, color) => {
+  const customFields = await client.customFields.getCustomField(projectCustomFieldId, {param: "value", param: "value", opt_pretty: true})
+  const option = customFields.enum_options.find(option => option.name === name)
+  if(!option) {
+    const created = await client.customFields.createEnumOptionForCustomField(projectCustomFieldId, {
+      name: name,
+      enabled: true,
+    })
+    return created;
+  }
+  return option;
 };
 
 const addProyectTagToTasks = async ({ action, resource, parent }) => {
@@ -35,17 +37,18 @@ const addProyectTagToTasks = async ({ action, resource, parent }) => {
     return;
   try {
     const task = await client.tasks.findById(resource.gid);
-    const hasTheTag = task.tags.find(tag => tag === task.projects[0].name)
-    if(hasTheTag || task.projects[0].name === 'Current Run') return
-
+    const taskProjectCustomField = task.custom_fields.find(customField => customField.gid === projectCustomFieldId)
+    if(taskProjectCustomField.display_value !== null || task.projects[0].name === 'Current Run' ) return
+    
     const project = await client.projects.findById(task.projects[0].gid)
     console.log(`Project ${project.name} get a new task`)
 
-    const tag = await findOrCreateTag(project.name, project.color);
-    client.tasks.addTag(task.gid, { tag: tag.gid });
-    console.log(`Tag ${tag.name} (${tag.gid}) added to ${task.name}`);
+    const option = await findOrCreateProjectCustomField(project.name, project.color);
+
+    await client.tasks.update(resource.gid, { custom_fields: {[projectCustomFieldId]: option.gid }})
+    console.log(`Custom field  ${option.name} added to ${task.name}`);
   } catch (e) {
-    console.warn("Error adding the tag to " + resource.gid, e.value.errors);
+    console.warn("Error adding the custom field to " + resource.gid, e.value.errors);
   }
 };
 
@@ -133,9 +136,9 @@ app.post("/", function (req, res) {
     res.send();
     req.body.events.reduce(async (_, event) => {
       // List of actions
-      await addProyectTagToTasks(event);
-      await addWebhooksToNewProjects(event);
-      await addNewTasksToBacklog(event)
+       await addProyectTagToTasks(event);
+       await addWebhooksToNewProjects(event);
+       await addNewTasksToBacklog(event)
     }, []);
   }
 });
