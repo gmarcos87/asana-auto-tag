@@ -32,15 +32,16 @@ const addProyectTagToTasks = async ({ action, resource, parent }) => {
   if (
     action !== "added" ||
     resource.resource_type !== "task" ||
-    parent.resource_type !== "project"
+    parent.resource_type !== "section"
   )
     return;
   try {
     const task = await client.tasks.findById(resource.gid);
+    if (task.projects[0].name !== 'Current Run' || !task.projects[1]  ) return
     const taskProjectCustomField = task.custom_fields.find(customField => customField.gid === projectCustomFieldId)
-    if(taskProjectCustomField.display_value !== null || task.projects[0].name === 'Current Run' ) return
-    
-    const project = await client.projects.findById(task.projects[0].gid)
+    if(taskProjectCustomField && taskProjectCustomField.display_value !== null ) return
+  
+    const project = await client.projects.findById(task.projects[1].gid)
     console.log(`Project ${project.name} get a new task`)
 
     const option = await findOrCreateProjectCustomField(project.name, project.color);
