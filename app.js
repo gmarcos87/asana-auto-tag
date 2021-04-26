@@ -48,7 +48,7 @@ const addProyectTagToTasks = async ({ action, resource, parent }) => {
     await client.tasks.update(resource.gid, { custom_fields: {[projectCustomFieldId]: option.gid }})
     console.log(`Custom field  ${option.name} added to ${task.name}`);
   } catch (e) {
-    console.warn("Error adding the custom field to " + resource.gid, e.value.errors);
+    console.warn("Error adding the custom field to " + resource.gid, e);
   }
 };
 
